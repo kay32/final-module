@@ -1,0 +1,7 @@
+kay.exam:
+  path: '/kay/attestation'
+  defaults:
+    _title: 'Attestation'
+    _form: 'Drupal\kay\Form\AttestationForm'
+  requirements:
+    _permission: 'access content'
