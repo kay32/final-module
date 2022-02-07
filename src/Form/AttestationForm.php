@@ -39,7 +39,7 @@ class AttestationForm extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId(): string {
-    return 'kay_validation';
+    return 'kay_attestation';
   }
 
   /**
@@ -134,12 +134,12 @@ class AttestationForm extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
+    // Prevent validation when adding a table or row.
     if ($form_state->getTriggeringElement()['#name'] != 'submit') {
       return;
     }
     $tables = $form_state->getValue('tables');
-    $column_count = self::PART_COUNT * self::PART_SIZE;
-    $row_bounds = [$column_count - 1, 0];
+    $row_bounds = [];
     $empty_count = 0;
     foreach ($tables as $table_index => $table) {
       // Finding first filled cell.
@@ -149,7 +149,7 @@ class AttestationForm extends FormBase {
           if ($cell !== '') {
             $first_cell = [$row_index, $column_index];
             // Finding the maximum range for one year.
-            if ($column_index < $row_bounds[0]) {
+            if ($row_bounds[0] === NULL || $column_index < $row_bounds[0]) {
               $row_bounds[0] = $column_index;
             }
             break 2;
@@ -168,7 +168,7 @@ class AttestationForm extends FormBase {
           if ($cell !== '') {
             $found = TRUE;
             // Finding the maximum range for one year.
-            if ($column_index > $row_bounds[1]) {
+            if ($row_bounds[1] === NULL || $column_index > $row_bounds[1]) {
               $row_bounds[1] = $column_index;
             }
           }

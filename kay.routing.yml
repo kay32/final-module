@@ -1,4 +1,4 @@
-kay.exam:
+kay.attestation:
   path: '/kay/attestation'
   defaults:
     _title: 'Attestation'
