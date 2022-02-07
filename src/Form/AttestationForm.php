@@ -104,8 +104,7 @@ class AttestationForm extends FormBase {
       ],
     ];
     for ($i = 0; $i < $this->rowCount; $i++) {
-      $table[$row['year']['#plain_text']] = $row;
-      $row['year']['#plain_text']++;
+      $table[++$row['year']['#plain_text']] = $row;
     }
     $form['tables'] = array_fill(0, $this->tableCount, $table);
 
