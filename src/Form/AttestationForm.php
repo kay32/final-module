@@ -12,7 +12,7 @@ use Drupal\Core\Form\FormStateInterface;
 class AttestationForm extends FormBase {
 
   /**
-   * The number of "parts" into which the table is divided.
+   * The number of "parts" into which a table row is divided.
    */
   protected const PART_COUNT = 4;
 
@@ -39,9 +39,7 @@ class AttestationForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state): array {
-    $wrapper_id = Html::cleanCssIdentifier($this->getFormId() . '-wrapper');
-    $form['#prefix'] = "<div id='$wrapper_id'>";
-    $form['#suffix'] = '</div>';
+    $tables_wrapper_id = Html::cleanCssIdentifier($this->getFormId() . '-tables');
     $form['#tree'] = TRUE;
     $form['#attached']['library'][] = 'kay/attestation_form';
 
@@ -50,7 +48,7 @@ class AttestationForm extends FormBase {
       '#value' => $this->t('Add Year'),
       '#submit' => ['::addRow'],
       '#ajax' => [
-        'wrapper' => $wrapper_id,
+        'wrapper' => $tables_wrapper_id,
         'callback' => '::updateAjaxCallback',
         'progress' => [
           'type' => 'fullscreen',
@@ -62,7 +60,7 @@ class AttestationForm extends FormBase {
       '#value' => $this->t('Add Table'),
       '#submit' => ['::addTable'],
       '#ajax' => [
-        'wrapper' => $wrapper_id,
+        'wrapper' => $tables_wrapper_id,
         'callback' => '::updateAjaxCallback',
         'progress' => [
           'type' => 'fullscreen',
@@ -104,7 +102,14 @@ class AttestationForm extends FormBase {
     for ($i = 0; $i < $this->rowCount; $i++) {
       $table[++$row['year']['#plain_text']] = $row;
     }
-    $form['tables'] = array_fill(0, $this->tableCount, $table);
+    $form['tables'] = [
+      '#type' => 'container',
+      '#attributes' => ['id' => $tables_wrapper_id],
+    ];
+    for ($i = 1; $i <= $this->tableCount; $i++) {
+      $table['#caption'] = $this->t('Table #@number', ['@number' => $i]);
+      $form['tables'][] = $table;
+    }
 
     $form['actions'] = [
       '#type' => 'actions',
@@ -114,7 +119,7 @@ class AttestationForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Submit'),
       '#ajax' => [
-        'wrapper' => $wrapper_id,
+        'wrapper' => $tables_wrapper_id,
         'callback' => '::updateAjaxCallback',
       ],
     ];
@@ -136,9 +141,9 @@ class AttestationForm extends FormBase {
     if ($form_state->getTriggeringElement()['#name'] != 'submit') {
       return;
     }
-    $tables = $form_state->getValue('tables');
     $row_bounds = [];
     $empty_count = 0;
+    $tables = $form_state->getValue('tables');
     foreach ($tables as $table_index => $table) {
       // Finding first filled cell.
       $first_cell = NULL;
@@ -146,7 +151,7 @@ class AttestationForm extends FormBase {
         foreach ($row as $column_index => $cell) {
           if ($cell !== '') {
             $first_cell = [$row_index, $column_index];
-            // Finding the maximum range for one year.
+            // Finding the minimum value of the range for the one year form.
             if ($row_bounds[0] === NULL || $column_index < $row_bounds[0]) {
               $row_bounds[0] = $column_index;
             }
@@ -161,8 +166,8 @@ class AttestationForm extends FormBase {
       }
       // Finding the last filled cell using a reverse loop.
       $found = FALSE;
-      for ($row = end($table); ($row_index = key($table)) !== NULL; $row = prev($table)) {
-        for ($cell = end($row); ($column_index = key($row)) !== NULL; $cell = prev($row)) {
+      foreach (array_reverse($table, TRUE) as $row_index => $row) {
+        foreach (array_reverse($row, TRUE) as $column_index => $cell) {
           // After finding, mark all empty ones as invalid.
           if ($found) {
             if ($cell === '') {
@@ -173,11 +178,16 @@ class AttestationForm extends FormBase {
             }
           }
           elseif ($cell !== '') {
-            $found = TRUE;
-            // Finding the maximum range for one year.
-            if ($row_bounds[1] === NULL || $column_index > $row_bounds[1]) {
-              $row_bounds[1] = $column_index;
+            if ($this->rowCount == 1) {
+              // Finding the maximum value of the range for the one year form.
+              if ($row_bounds[1] === NULL || $column_index > $row_bounds[1]) {
+                $row_bounds[1] = $column_index;
+              }
+              // Exiting the loop because marking when
+              // the table has one year will still be done below.
+              break 2;
             }
+            $found = TRUE;
           }
           // Exit from the loop when the first filled cell is reached.
           if ($first_cell == [$row_index, $column_index]) {
@@ -217,20 +227,20 @@ class AttestationForm extends FormBase {
     $tables = $form_state->getValue('tables');
     foreach ($tables as $table_index => $table) {
       foreach ($table as $row_index => $row) {
-        // Calculate the sum of all parts in the table.
-        $year_sum = 0;
+        // Calculate the sum of all parts in the row.
+        $row_sum = 1;
         for ($i = 0; $i < self::PART_COUNT; $i++) {
           // Calculate the amount of one part.
-          $part_sum = 0;
+          $part_sum = 1;
           for ($j = 0; $j < self::PART_SIZE; $j++) {
             $part_sum += $row[$i * self::PART_SIZE + $j];
           }
-          $part_sum = round(($part_sum + 1) / self::PART_SIZE, 2);
-          $year_sum += $part_sum;
+          $part_sum = round($part_sum / self::PART_SIZE, 2);
+          $row_sum += $part_sum;
           $form['tables'][$table_index][$row_index]["part_$i"]['#plain_text'] = $part_sum;
         }
-        $year_sum = round(($year_sum + 1) / self::PART_COUNT, 2);
-        $form['tables'][$table_index][$row_index]['ytd']['#plain_text'] = $year_sum;
+        $row_sum = round($row_sum / self::PART_COUNT, 2);
+        $form['tables'][$table_index][$row_index]['ytd']['#plain_text'] = $row_sum;
       }
     }
     $this->messenger()->addStatus($this->t('Valid.'));
@@ -253,10 +263,10 @@ class AttestationForm extends FormBase {
   }
 
   /**
-   * Updates the form after a rebuild with Ajax.
+   * Updates the tables after a rebuild with Ajax.
    */
   public function updateAjaxCallback(array &$form, FormStateInterface $form_state): array {
-    return $form;
+    return $form['tables'];
   }
 
 }
