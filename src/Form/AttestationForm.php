@@ -38,13 +38,6 @@ class AttestationForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId(): string {
-    return 'kay_attestation';
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function buildForm(array $form, FormStateInterface $form_state): array {
     $wrapper_id = Html::cleanCssIdentifier($this->getFormId() . '-wrapper');
     $form['#prefix'] = "<div id='$wrapper_id'>";
@@ -134,6 +127,13 @@ class AttestationForm extends FormBase {
   /**
    * {@inheritdoc}
    */
+  public function getFormId(): string {
+    return 'kay_attestation';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     // Prevent validation when adding a table or row.
     if ($form_state->getTriggeringElement()['#name'] != 'submit') {
@@ -166,18 +166,20 @@ class AttestationForm extends FormBase {
       for ($row = end($table); ($row_index = key($table)) !== NULL; $row = prev($table)) {
         for ($cell = end($row); ($column_index = key($row)) !== NULL; $cell = prev($row)) {
           // Finding last filled cell.
-          if ($cell !== '') {
+          if ($found) {
+            if ($cell === '') {
+              $form_state->setErrorByName(
+                "tables][$table_index][$row_index][$column_index",
+                $this->t('Invalid.')
+              );
+            }
+          }
+          elseif ($cell !== '') {
             $found = TRUE;
             // Finding the maximum range for one year.
             if ($row_bounds[1] === NULL || $column_index > $row_bounds[1]) {
               $row_bounds[1] = $column_index;
             }
-          }
-          elseif ($found) {
-            // After finding, mark all empty ones as invalid.
-            $form_state->setErrorByName(
-              "tables][$table_index][$row_index][$column_index",
-              $this->t('Invalid.'));
           }
           // Exit from the loop when the first filled cell is reached.
           if ($first_cell == [$row_index, $column_index]) {
@@ -187,7 +189,7 @@ class AttestationForm extends FormBase {
       }
     }
     // Set error when all tables is empty.
-    if ($empty_count == count($tables)) {
+    if ($empty_count == $this->tableCount) {
       $form_state->setErrorByName('', t('Please fill out the table.'));
     }
     elseif ($this->rowCount == 1) {
@@ -199,7 +201,8 @@ class AttestationForm extends FormBase {
             if ($row[$column_index] === '') {
               $form_state->setErrorByName(
                 "tables][$table_index][$row_index][$column_index",
-                $this->t('Invalid.'));
+                $this->t('Invalid.')
+              );
             }
           }
         }
