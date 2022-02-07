@@ -1,0 +1,16 @@
+.kay-attestation table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.kay-attestation input[type=number] {
+  width: 100%;
+  max-width: 100%;
+  -moz-appearance: textfield;
+}
+.kay-attestation input[type=number]::-webkit-outer-spin-button, .kay-attestation input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/*# sourceMappingURL=attestation-form.css.map */

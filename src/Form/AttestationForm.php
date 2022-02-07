@@ -50,6 +50,7 @@ class AttestationForm extends FormBase {
     $form['#prefix'] = "<div id='$wrapper_id'>";
     $form['#suffix'] = '</div>';
     $form['#tree'] = TRUE;
+    $form['#attached']['library'][] = 'kay/attestation_form';
 
     $form['add_year'] = [
       '#type' => 'submit',

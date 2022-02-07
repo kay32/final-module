@@ -1,0 +1,4 @@
+attestation_form:
+  css:
+    theme:
+      css/attestation-form.css: { }
