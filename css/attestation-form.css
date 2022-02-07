@@ -1,3 +1,7 @@
+/**
+ * @file
+ * Stylesheet for the attestation form of the Kay module.
+ */
 .kay-attestation table {
   display: block;
   overflow-x: auto;
@@ -12,5 +16,3 @@
   -webkit-appearance: none;
   margin: 0;
 }
-
-/*# sourceMappingURL=attestation-form.css.map */

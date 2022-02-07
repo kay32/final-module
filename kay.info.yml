@@ -1,6 +1,6 @@
-name: 'Kay Final'
+name: 'Kay'
 type: module
-description: 'Skill test.'
+description: 'The final module.'
 package: Custom
 core: 8.x
 core_version_requirement: ^8 || ^9

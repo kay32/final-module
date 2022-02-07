@@ -12,12 +12,12 @@ use Drupal\Core\Form\FormStateInterface;
 class AttestationForm extends FormBase {
 
   /**
-   * The number of "quarters" into which the table is divided.
+   * The number of "parts" into which the table is divided.
    */
   protected const PART_COUNT = 4;
 
   /**
-   * The size of the "quarters" that are placed in the table.
+   * The size of each "part" that is placed in the table.
    */
   protected const PART_SIZE = 3;
 
@@ -73,9 +73,7 @@ class AttestationForm extends FormBase {
     $row['year'] = ['#plain_text' => date('Y') - $this->rowCount];
     for ($i = 0; $i < self::PART_COUNT; $i++) {
       for ($j = 0; $j < self::PART_SIZE; $j++) {
-        $row[] = [
-          '#type' => 'number',
-        ];
+        $row[] = ['#type' => 'number'];
       }
       $row["part_$i"] = ['#plain_text' => ''];
     }
@@ -161,10 +159,11 @@ class AttestationForm extends FormBase {
         $empty_count++;
         continue;
       }
+      // Finding the last filled cell using a reverse loop.
       $found = FALSE;
       for ($row = end($table); ($row_index = key($table)) !== NULL; $row = prev($table)) {
         for ($cell = end($row); ($column_index = key($row)) !== NULL; $cell = prev($row)) {
-          // Finding last filled cell.
+          // After finding, mark all empty ones as invalid.
           if ($found) {
             if ($cell === '') {
               $form_state->setErrorByName(
@@ -189,7 +188,8 @@ class AttestationForm extends FormBase {
     }
     // Set error when all tables is empty.
     if ($empty_count == $this->tableCount) {
-      $form_state->setErrorByName('', t('Please fill out the table.'));
+      $form_state->setErrorByName('',
+        $this->t('Please fill out the table.'));
     }
     elseif ($this->rowCount == 1) {
       // If the form has one year, the period of all rows must match.
@@ -213,11 +213,14 @@ class AttestationForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    // After successful validation, calculation of values by formulas.
     $tables = $form_state->getValue('tables');
     foreach ($tables as $table_index => $table) {
       foreach ($table as $row_index => $row) {
+        // Calculate the sum of all parts in the table.
         $year_sum = 0;
         for ($i = 0; $i < self::PART_COUNT; $i++) {
+          // Calculate the amount of one part.
           $part_sum = 0;
           for ($j = 0; $j < self::PART_SIZE; $j++) {
             $part_sum += $row[$i * self::PART_SIZE + $j];
