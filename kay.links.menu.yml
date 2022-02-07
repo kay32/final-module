@@ -1,0 +1,4 @@
+kay.attestation:
+  title: 'Attestation'
+  route_name: kay.attestation
+  menu_name: main
